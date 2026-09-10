@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#f4ead7" />
+  <title>凌玲在哪儿？</title>
+  <style>
+    :root{--ink:#2c2722;--paper:#f8f1e4;--red:#c94f3d;--gold:#e7bd52;--teal:#4f8e8b;--muted:#7a7067;--panel:rgba(255,250,240,.96)}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;height:100%;overflow:hidden;background:#efe6d5;color:var(--ink);font-family:ui-rounded,"PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+    button{font:inherit;color:inherit}
+    #app{height:100%;display:flex;flex-direction:column;position:relative}
+    .hud{height:92px;padding:8px 10px 6px;background:linear-gradient(#fbf5e8,#eee3cf);border-bottom:2px solid #3a332d;display:grid;grid-template-columns:1fr auto;gap:6px 10px;z-index:10;box-shadow:0 2px 10px #0002}
+    .hudTop{display:flex;align-items:center;gap:7px;min-width:0}
+    .pill{background:#fff8ea;border:2px solid #3a332d;border-radius:999px;padding:5px 9px;font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #3a332d22}
+    .zone{background:#d8efe9}
+    .timer{background:#fff1b9;font-size:15px}
+    .stats{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .meter{background:#fff9ec;border:2px solid #3a332d;border-radius:12px;padding:4px 7px}
+    .meterLine{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:900;margin-bottom:3px}
+    .bar{height:8px;border-radius:9px;background:#e4d8c4;overflow:hidden;border:1px solid #51463d}
+    .fill{height:100%;width:0;transition:width .2s}
+    #angerFill{background:linear-gradient(90deg,#e7bd52,#d46743)}
+    #chaosFill{background:linear-gradient(90deg,#77aaa5,#bf4839)}
+    #soundBtn{border:2px solid #3a332d;background:#fff8ea;border-radius:999px;width:42px;height:36px;font-weight:900}
+    .stage{position:relative;flex:1;min-height:0;background:#d3c2a8;overflow:hidden;touch-action:none}
+    canvas{display:block;width:100%;height:100%}
+    .hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:8;background:rgba(255,249,235,.92);border:2px solid #3a332d;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:900;pointer-events:none;max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .clues{position:absolute;right:8px;top:46px;width:min(210px,52vw);z-index:7;background:rgba(255,250,237,.9);border:2px solid #3a332d;border-radius:14px;padding:7px 8px;box-shadow:0 3px 10px #0002;pointer-events:none}
+    .clues h3{font-size:10px;margin:0 0 4px}
+    .clues div{font-size:9px;line-height:1.35;padding:2px 0;border-top:1px dashed #b7a993}
+    .clues .old{opacity:.55}
+    .controls{position:absolute;left:0;right:0;bottom:max(10px,env(safe-area-inset-bottom));z-index:9;display:flex;justify-content:space-between;align-items:flex-end;padding:0 14px;pointer-events:none}
+    .dpad{width:132px;height:132px;position:relative;pointer-events:auto;opacity:.92}
+    .d{position:absolute;width:44px;height:44px;border-radius:14px;border:2px solid #3a332d;background:#fff6e5;font-size:20px;font-weight:900;box-shadow:0 3px 0 #3a332d33;touch-action:none}
+    .d:active{transform:translateY(2px);box-shadow:none;background:#f0d68b}
+    .up{left:44px;top:0}.down{left:44px;bottom:0}.left{left:0;top:44px}.right{right:0;top:44px}
+    #interact{pointer-events:auto;width:88px;height:88px;border-radius:50%;border:3px solid #3a332d;background:#c8c1b2;color:#fff;font-weight:1000;font-size:16px;box-shadow:0 5px 0 #3a332d44;opacity:.7}
+    #interact.ready{background:var(--red);opacity:1;animation:pulse 1.2s infinite}
+    @keyframes pulse{50%{transform:scale(1.05)}}
+    .screen{position:absolute;inset:0;z-index:30;background:radial-gradient(circle at 50% 10%,#fff9e8,#ead9bd);display:grid;place-items:center;padding:22px;text-align:center}
+    .card{width:min(520px,94vw);background:#fff8eb;border:3px solid #3a332d;border-radius:24px;padding:24px 18px;box-shadow:0 12px 0 #3a332d22}
+    .logo{width:84px;height:84px;margin:0 auto 14px;border-radius:24px;background:var(--red);border:4px solid #3a332d;display:grid;place-items:center;font-size:38px;font-weight:1000;transform:rotate(-5deg)}
+    .card h1{margin:0;font-size:34px;letter-spacing:1px}.card p{color:#655a50;line-height:1.65;font-weight:700}
+    .primary{border:3px solid #3a332d;background:var(--red);color:white;border-radius:16px;padding:13px 20px;font-weight:1000;font-size:18px;box-shadow:0 5px 0 #3a332d33;cursor:pointer}
+    .secondary{border:2px solid #3a332d;background:#fff5e0;border-radius:14px;padding:10px 14px;font-weight:900}
+    .dialogMask{position:absolute;inset:0;z-index:20;background:rgba(30,25,20,.18);display:none;align-items:flex-end;justify-content:center;padding:0 8px max(8px,env(safe-area-inset-bottom))}
+    .dialogMask.show{display:flex}
+    .dialog{width:min(640px,100%);background:var(--panel);border:3px solid #3a332d;border-radius:22px;padding:12px;box-shadow:0 -8px 30px #0002}
+    .talker{font-size:11px;color:#786b61;font-weight:900;margin-bottom:6px}
+    .log{max-height:185px;overflow:auto;background:#fffdf7;border:2px solid #d7c7ae;border-radius:15px;padding:9px;margin-bottom:9px}
+    .line{font-size:14px;line-height:1.5;margin:5px 0}.me{font-weight:900}.npc{color:#4d655f}.sys{color:#9a5a44;font-size:12px}
+    .choices{display:grid;gap:7px}.choice{border:2px solid #3a332d;background:#fff1c8;border-radius:13px;padding:10px;font-weight:900;text-align:left}.choice.danger{background:#e87a65;color:#fff}
+    .toast{position:absolute;left:50%;top:112px;transform:translateX(-50%) translateY(-12px);z-index:25;background:#2f2a25;color:white;border:2px solid #fff5dc;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;opacity:0;transition:.2s;pointer-events:none;max-width:84%;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .endStats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.endStats div{border:2px solid #3a332d;border-radius:13px;background:#fffdf5;padding:9px;font-weight:900}.endStats b{display:block;font-size:20px}
+    .small{font-size:11px;color:#756a61}.hidden{display:none!important}
+    @media (min-width:700px){.hud{height:76px;grid-template-columns:auto 1fr auto;align-items:center}.stats{grid-column:auto;display:grid;grid-template-columns:1fr 1fr}.controls{padding:0 24px 16px}.clues{width:230px}.dialog{padding:15px}.log{max-height:220px}}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="hud">
+    <div class="hudTop"><div class="pill timer" id="timer">75.0s</div><div class="pill zone" id="zone">前台</div></div>
+    <button id="soundBtn" aria-label="切换音效">音效</button>
+    <div class="stats">
+      <div class="meter"><div class="meterLine"><span>怒气值 · <span id="angerLabel">还能讲道理</span></span><b id="angerNum">0</b></div><div class="bar"><div class="fill" id="angerFill"></div></div></div>
+      <div class="meter"><div class="meterLine"><span>办公室混乱值 · <span id="chaosLabel">正常办公</span></span><b id="chaosNum">0</b></div><div class="bar"><div class="fill" id="chaosFill"></div></div></div>
+    </div>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="game"></canvas>
+    <div class="hint" id="hint">先去前台问问。</div>
+    <div class="clues" id="clueBox"><h3>线索便签</h3><div>还没有线索。</div></div>
+    <div class="controls">
+      <div class="dpad">
+        <button class="d up" data-dir="up">↑</button><button class="d left" data-dir="left">←</button><button class="d right" data-dir="right">→</button><button class="d down" data-dir="down">↓</button>
+      </div>
+      <button id="interact">问一下</button>
+    </div>
+    <div class="dialogMask" id="dialogMask"><div class="dialog"><div class="talker" id="talker">办公室同事</div><div class="log" id="dialogLog"></div><div class="choices" id="choices"></div></div></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="screen" id="home"><div class="card"><div class="logo">？</div><h1>凌玲在哪儿？</h1><p>薛甄珠女士已经到公司楼下。<br>自己走进前台、工位区和茶水间，挨个问人，把凌玲找出来。</p><p class="small">手机：方向键移动，靠近同事后点“问一下”。<br>电脑：WASD / 方向键移动，E 键互动。</p><button class="primary" id="startBtn">冲进办公室</button><p class="small">原创卡通互动原型，不使用演员肖像或影视截图。</p></div></div>
+  <div class="screen hidden" id="end"><div class="card"><div class="logo" id="endIcon">！</div><h1 id="endTitle">找到了。</h1><p id="endText"></p><div class="endStats" id="endStats"></div><button class="primary" id="restartBtn">再找一次</button></div></div>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), canvas=$('#game'),ctx=canvas.getContext('2d');
+const WORLD={w:1960,h:760};
+const ROOM={reception:{x:0,w:520,name:'前台'},office:{x:520,w:900,name:'工位区'},pantry:{x:1420,w:540,name:'茶水间'}};
+const walls=[], furniture=[];
+function addWall(x,y,w,h){walls.push({x,y,w,h})} function addF(x,y,w,h,type,label=''){furniture.push({x,y,w,h,type,label})}
+// outer walls
+addWall(0,0,WORLD.w,24); addWall(0,WORLD.h-24,WORLD.w,24); addWall(0,0,24,WORLD.h); addWall(WORLD.w-24,0,24,WORLD.h);
+// room separators with door gaps y 300..440
+addWall(500,24,20,276);addWall(500,440,20,296);addWall(1400,24,20,276);addWall(1400,440,20,296);
+// reception
+addF(110,95,280,70,'counter','前台');addF(75,535,180,70,'sofa','等候沙发');addF(335,545,70,70,'plant','绿植');addF(70,200,85,50,'table','访客登记');
+// office desks
+for(let r=0;r<3;r++){for(let c=0;c<3;c++){addF(610+c*250,100+r*185,175,70,'desk','工位');}}
+addF(1250,95,95,75,'printer','打印机');addF(1260,545,85,75,'plant','绿植');
+// pantry
+addF(1490,90,105,70,'coffee','咖啡机');addF(1630,75,90,95,'fridge','冰箱');addF(1760,90,80,70,'water','饮水机');addF(1585,340,250,105,'table','茶水桌');
+const start={x:240,y:610};
+let player={x:start.x,y:start.y,r:18,speed:245};
+let npcs=[],targetId=null,guardId=null,nearNpc=null,keys={},running=false,dialogOpen=false,last=0,timeLeft=75,anger=0,chaos=0,wrong=0,askedSet=new Set(),visited=new Set(['reception']),clues=[],muted=false,animT=0,lastLingMove=0,lastLingZoneMove=0;
+let toastTimer=null;
+const looks=[
+ {hair:'#3c3029',shirt:'#d3b16e',glasses:false},{hair:'#2f2925',shirt:'#7aa2a0',glasses:true},{hair:'#5b4032',shirt:'#d78368',glasses:false},{hair:'#2f2e36',shirt:'#a3a7bd',glasses:true},{hair:'#4c332b',shirt:'#c5a3b5',glasses:false},{hair:'#27231f',shirt:'#b2c77a',glasses:false},{hair:'#654738',shirt:'#7c8eb6',glasses:true},{hair:'#362f34',shirt:'#d6a276',glasses:false}
+];
+const roles=['front','hong','gossip','intern','hr','guard','chen','staff','staff','staff','staff','staff','staff','staff','lingling'];
+const personalities=['紧张','吃瓜','装忙','嘴硬','热心','怕事','看热闹','迷糊'];
+const names=['同事A','同事B','同事C','同事D','同事E','同事F','同事G','同事H','同事I','同事J','同事K','同事L','同事M','同事N','同事O'];
+function rnd(a,b){return a+Math.random()*(b-a)} function pick(a){return a[Math.floor(Math.random()*a.length)]} function chance(p){return Math.random()<p}
+function roomOf(x){return x<520?'reception':x<1420?'office':'pantry'}
+function roomName(x){return ROOM[roomOf(x)].name}
+function collides(x,y,r=player.r){if(x-r<24||x+r>WORLD.w-24||y-r<24||y+r>WORLD.h-24)return true;for(const z of walls){if(circleRect(x,y,r,z))return true}for(const f of furniture){if(circleRect(x,y,r,f))return true}return false}
+function circleRect(cx,cy,r,o){const nx=Math.max(o.x,Math.min(cx,o.x+o.w)),ny=Math.max(o.y,Math.min(cy,o.y+o.h));return (cx-nx)**2+(cy-ny)**2<r*r}
+function freeSpot(zone,tries=300){const R=ROOM[zone];for(let i=0;i<tries;i++){const x=rnd(R.x+55,R.x+R.w-55),y=rnd(75,675);if(!collides(x,y,22)&&Math.hypot(x-player.x,y-player.y)>70)return{x,y}}return{x:R.x+R.w/2,y:650}}
+function initNPCs(){npcs=[];const roleCopy=[...roles].sort(()=>Math.random()-.5);roleCopy.forEach((role,i)=>{
+ let zone='office'; if(role==='front')zone='reception'; else if(role==='lingling')zone=chance(.5)?'office':'pantry'; else {const q=Math.random();zone=q<.15?'reception':q<.78?'office':'pantry'}
+ let pos=freeSpot(zone); if(role==='front')pos={x:250,y:205};
+ const look={...pick(looks)}; if(chance(.35)) look.glasses=!look.glasses;
+ npcs.push({id:i+1,role,name:names[i],zone,x:pos.x,y:pos.y,r:17,look,personality:pick(personalities),asked:false,wrong:false,mark:'',markUntil:0,tx:pos.x,ty:pos.y,nextMove:rnd(3,8),recording:false});
+ });
+ const t=npcs.find(n=>n.role==='lingling');targetId=t.id; guardId=npcs.find(n=>n.role==='guard').id;
+}
+function reset(){player.x=start.x;player.y=start.y;timeLeft=75;anger=0;chaos=0;wrong=0;askedSet=new Set();visited=new Set(['reception']);clues=[];dialogOpen=false;nearNpc=null;lastLingMove=0;lastLingZoneMove=0;initNPCs();updateHUD();renderClues();$('#dialogMask').classList.remove('show');$('#hint').textContent='先去前台问问。';}
+function resize(){const dpr=Math.min(2,devicePixelRatio||1),rect=canvas.getBoundingClientRect();canvas.width=Math.floor(rect.width*dpr);canvas.height=Math.floor(rect.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);
+function movePlayer(dx,dy,dt){if(dialogOpen)return;const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const sp=player.speed*dt;let nx=player.x+dx*sp,ny=player.y+dy*sp;if(!collides(nx,player.y))player.x=nx;if(!collides(player.x,ny))player.y=ny;visited.add(roomOf(player.x));}
+function nearest(){let best=null,bd=72;for(const n of npcs){if(roomOf(player.x)!==roomOf(n.x))continue;const d=Math.hypot(n.x-player.x,n.y-player.y);if(d<bd){bd=d;best=n}}return best}
+function updateNPCs(dt){const t=animT;for(const n of npcs){if(n.role==='front')continue;
+   let speed=0;
+   if(n.role==='guard'&&chaos>=80){n.tx=player.x;n.ty=player.y;speed=92;}
+   else if(n.role==='lingling'){speed=34;if(t-lastLingMove>rnd(5,8)){const z=roomOf(n.x),p=freeSpot(z);n.tx=p.x;n.ty=p.y;lastLingMove=t}if(t-lastLingZoneMove>13&&chance(.006)){const z=roomOf(n.x)==='office'?'pantry':'office',p=freeSpot(z);n.x=p.x;n.y=p.y;n.tx=p.x;n.ty=p.y;lastLingZoneMove=t;}}
+   else if(chaos>=40&&Math.hypot(n.x-player.x,n.y-player.y)<250){speed=chaos>=70?32:18;if(n.personality==='怕事'){n.tx=n.x+(n.x-player.x);n.ty=n.y+(n.y-player.y)}else{n.tx=player.x+rnd(-80,80);n.ty=player.y+rnd(-80,80)}}
+   else if(t>n.nextMove&&chance(.08)){const p=freeSpot(roomOf(n.x));n.tx=p.x;n.ty=p.y;n.nextMove=t+rnd(5,10);speed=18}
+   if(speed>0){const dx=n.tx-n.x,dy=n.ty-n.y,l=Math.hypot(dx,dy);if(l>4){const nx=n.x+dx/l*speed*dt,ny=n.y+dy/l*speed*dt;if(!collides(nx,ny,n.r)){n.x=nx;n.y=ny}}}
+   n.recording=chaos>=60&&n.role!=='guard'&&chance(.015);
+   if(n.markUntil<t)n.mark='';
+ }
+ if(chaos>=80){const g=npcs.find(n=>n.id===guardId);if(g&&Math.hypot(g.x-player.x,g.y-player.y)<34){finish('chaos')}}
+}
+function showToast(s){$('#toast').textContent=s;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),1400)}
+function beep(freq=440,dur=.06){if(muted)return;try{const A=window.AudioContext||window.webkitAudioContext,ac=new A(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;g.gain.value=.04;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);o.onended=()=>ac.close()}catch(e){}}
+function vibrate(ms=25){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+function angerLabel(){return anger<36?'还能讲道理':anger<70?'开始上头':anger<100?'谁都像凌玲':'全员可疑'}
+function chaosLabel(){return chaos<40?'正常办公':chaos<60?'有人围观':chaos<80?'有人录像':chaos<100?'保安赶来':'彻底失控'}
+function updateHUD(){$('#timer').textContent=timeLeft.toFixed(1)+'s';$('#zone').textContent=roomName(player.x);$('#angerNum').textContent=Math.round(anger);$('#chaosNum').textContent=Math.round(chaos);$('#angerLabel').textContent=angerLabel();$('#chaosLabel').textContent=chaosLabel();$('#angerFill').style.width=Math.min(100,anger)+'%';$('#chaosFill').style.width=Math.min(100,chaos)+'%';}
+function addClue(text){clues.unshift({text,zone:roomOf(npcs.find(n=>n.id===targetId).x),t:timeLeft});clues=clues.slice(0,5);renderClues()}
+function renderClues(){const box=$('#clueBox');box.innerHTML='<h3>线索便签</h3>';if(!clues.length){box.innerHTML+='<div>还没有线索。</div>';return}const tz=roomOf(npcs.find(n=>n.id===targetId).x);clues.forEach(c=>{const old=c.zone!==tz;box.innerHTML+=`<div class="${old?'old':''}">${old?'较早 · ':''}${c.text}</div>`})}
+function greeting(n){if(n.role==='hong')return pick(['我不是。','你认错人了。']);if(n.role==='chen')return pick(['你怎么来了……','这里是公司。']);if(n.role==='lingling')return pick(['你找谁？','我还有个会。','你是不是找错部门了？']);return pick(['我不是。','你先别激动。','你找谁啊？','我只是路过。'])}
+function npcAfterWho(n){if(n.role==='hong')return chance(.65)?'……':'我真不知道。';if(n.role==='gossip')return pick(['这个……不好说。','你别问我啊。','我好像听说过。']);if(n.role==='intern')return pick(['我刚来几天。','我真的不知道。']);if(n.role==='chen')return '这事回头再说。';if(n.role==='lingling')return pick(['我不清楚。','你问前台吧。','我怎么会知道。']);return chance(.55)?'……':pick(['我不方便说。','我不知道。','你问别人吧。'])}
+function identityReply(n){if(n.role==='hong')return '我不是，我姓洪。';if(n.role==='gossip'&&chance(.5))return '我不是。好像是凌玲。';if(n.role==='intern'&&chance(.35))return '我不是……好像是凌玲？';if(n.role==='lingling')return pick(['我不是。','你真的找错人了。','我不知道你在说谁。']);return pick(['我不是。','真不是我。','你认错了。','我只是来打印东西的。'])}
+function clueFor(n){const target=npcs.find(x=>x.id===targetId),z=roomOf(target.x);const trueText=z==='reception'?'她刚才在前台这边。':z==='pantry'?'她刚往茶水间去了。':target.x>1160?'她在工位区靠打印机那边。':'她应该还在工位区里面。';const fake=pick(z==='pantry'?['她刚才还在工位区。','我好像看见她往前台去了。']:['她应该去茶水间了。','我听说她刚下楼。']);let p=.52;if(n.role==='front')p=.85;if(n.role==='gossip')p=.55;if(n.role==='intern')p=.22;if(n.role==='hong')p=.25;if(n.role==='lingling')p=.08;if(n.role==='chen')p=.42;if(chance(p))return trueText;if(n.role==='intern'&&chance(.5))return '我刚来几天，我真的不知道。';if(n.role==='gossip')return fake+'……也可能我看错了。';return fake}
+function nearbyReaction(){const list=['又认错了？','她来了她来了。','别看我。','我什么都不知道。','怎么还没找到？','有人叫HR吗？'];for(const n of npcs){if(Math.hypot(n.x-player.x,n.y-player.y)<180&&chance(.22)){n.mark=pick(list);n.markUntil=animT+2.3}}}
+function startDialog(n){dialogOpen=true;nearNpc=n;askedSet.add(n.id);n.asked=true;anger=Math.min(100,anger+2);beep(560);vibrate();$('#dialogMask').classList.add('show');$('#talker').textContent='办公室同事';const log=$('#dialogLog');log.innerHTML='';line('me','薛甄珠：你是不是陈俊生的姘头？');line('npc','同事：'+greeting(n));showChoices([{t:'那是谁？',f:()=>stageWho(n)},{t:'算了，换个人',f:closeDialog}]);}
+function line(cls,t){const d=document.createElement('div');d.className='line '+cls;d.textContent=t;$('#dialogLog').appendChild(d);$('#dialogLog').scrollTop=9999}
+function showChoices(arr){const c=$('#choices');c.innerHTML='';arr.forEach(o=>{const b=document.createElement('button');b.className='choice'+(o.danger?' danger':'');b.textContent=o.t;b.onclick=o.f;c.appendChild(b)})}
+function stageWho(n){line('me','薛甄珠：那是谁？');const r=npcAfterWho(n);line('npc','同事：'+r);showChoices([{t:'你不说，那就是你。',f:()=>stageAccuseLogic(n)},{t:'算了，换个人',f:closeDialog}])}
+function stageAccuseLogic(n){line('me','薛甄珠：你不说，那就是你。');const r=identityReply(n);line('npc','同事：'+r);if(n.role==='hong'){n.mark='我姓洪';n.markUntil=animT+4}showChoices([{t:'凌玲在哪儿？',f:()=>stageClue(n)},{t:'我看你就是凌玲！',danger:true,f:()=>formalAccuse(n)},{t:'算了，换个人',f:closeDialog}])}
+function stageClue(n){line('me','薛甄珠：凌玲在哪儿？');const c=clueFor(n);line('npc','同事：'+c);addClue(c);anger=Math.min(100,anger+3);showChoices([{t:'我看你就是凌玲！',danger:true,f:()=>formalAccuse(n)},{t:'继续找',f:closeDialog}])}
+function formalAccuse(n){if(n.id===targetId){line('me','薛甄珠：就是你。');line('sys','办公室突然安静了。');setTimeout(()=>finish('win'),500);return}wrong++;anger=Math.min(100,anger+18);chaos=Math.min(100,chaos+20);line('npc','同事：'+pick(['真不是我！','你认错人了！','我只是来上班的！','工牌要不要给你看？']));n.wrong=true;n.mark=pick(['认错了！','又是我？','救命']);n.markUntil=animT+3; // step away
+ const dx=n.x-player.x,dy=n.y-player.y,l=Math.hypot(dx,dy)||1;const nx=n.x+dx/l*55,ny=n.y+dy/l*55;if(!collides(nx,ny,n.r)){n.x=nx;n.y=ny}
+ nearbyReaction();beep(220,.1);vibrate(60);if(chaos>=100){setTimeout(()=>finish('chaos'),450);return}showChoices([{t:'继续找',f:closeDialog}])}
+function closeDialog(){dialogOpen=false;nearNpc=null;$('#dialogMask').classList.remove('show')}
+function finish(kind){if(!running)return;running=false;dialogOpen=false;$('#dialogMask').classList.remove('show');let title,text,icon='！';if(kind==='win'){title='找到了。';text='办公室恢复了三秒钟的安静。';icon='✓'}else if(kind==='chaos'){title='寻找行动被迫中止。';text='保安比凌玲先出现了。'}else{title='凌玲已下班。';text='电梯门刚刚合上。'}$('#endTitle').textContent=title;$('#endText').textContent=text;$('#endIcon').textContent=icon;const used=(75-timeLeft).toFixed(1);let label=wrong===0&&askedSet.size<=4?'一眼识人型':wrong>=3?'办公室风暴型':askedSet.size>=7?'谨慎盘问型':'一路追问型';$('#endStats').innerHTML=`<div><b>${used}s</b>用时</div><div><b>${visited.size}</b>走过区域</div><div><b>${askedSet.size}</b>盘问人数</div><div><b>${wrong}</b>错认人数</div><div><b>${Math.round(anger)}</b>最终怒气</div><div><b>${label}</b>称号</div>`;$('#end').classList.remove('hidden')}
+function draw(){const W=canvas.clientWidth,H=canvas.clientHeight;ctx.clearRect(0,0,W,H);const viewW=Math.min(920,Math.max(520,W*1.55)),scale=W/viewW,viewH=H/scale;let camX=player.x-viewW/2,camY=player.y-viewH/2;camX=Math.max(0,Math.min(WORLD.w-viewW,camX));camY=Math.max(0,Math.min(WORLD.h-viewH,camY));ctx.save();ctx.scale(scale,scale);ctx.translate(-camX,-camY);
+ // floor rooms
+ roomRect(ROOM.reception.x,ROOM.reception.w,'#eadfc8','前台');roomRect(ROOM.office.x,ROOM.office.w,'#d8e3df','开放工位');roomRect(ROOM.pantry.x,ROOM.pantry.w,'#e5dfc4','茶水间');
+ // grid
+ ctx.strokeStyle='rgba(80,70,60,.08)';ctx.lineWidth=1;for(let x=0;x<WORLD.w;x+=40){ctx.beginPath();ctx.moveTo(x,24);ctx.lineTo(x,WORLD.h-24);ctx.stroke()}for(let y=24;y<WORLD.h;y+=40){ctx.beginPath();ctx.moveTo(24,y);ctx.lineTo(WORLD.w-24,y);ctx.stroke()}
+ // furniture/walls
+ for(const w of walls){ctx.fillStyle='#8f7e69';ctx.fillRect(w.x,w.y,w.w,w.h)}
+ furniture.forEach(drawFurniture);
+ // room doors signs
+ sign(470,350,'→ 工位区');sign(1360,350,'→ 茶水间');
+ // NPCs
+ npcs.slice().sort((a,b)=>a.y-b.y).forEach(n=>drawChar(n.x,n.y,n.look,false,n));drawChar(player.x,player.y,{hair:'#4b3027',shirt:'#c94f3d',glasses:false},true,null);
+ ctx.restore();
+}
+function roomRect(x,w,color,name){ctx.fillStyle=color;ctx.fillRect(x,0,w,WORLD.h);ctx.fillStyle='rgba(44,39,34,.7)';ctx.font='900 18px sans-serif';ctx.fillText(name,x+36,55)}
+function drawFurniture(f){const m={counter:'#b68b54',sofa:'#a86758',plant:'#638762',desk:'#b99462',printer:'#70737c',coffee:'#705548',fridge:'#d6dcda',water:'#7fb4c2',table:'#c8ac77'};ctx.fillStyle=m[f.type]||'#aaa';ctx.strokeStyle='#3a332d';ctx.lineWidth=3;round(f.x,f.y,f.w,f.h,10,true);if(f.label){ctx.fillStyle='#3a332d';ctx.font='900 13px sans-serif';ctx.fillText(f.label,f.x+8,f.y+22)}}
+function round(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);fill?ctx.fill():0;ctx.stroke()}
+function sign(x,y,t){ctx.fillStyle='#fff5d6';ctx.strokeStyle='#3a332d';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x,y,90,32,10);ctx.fill();ctx.stroke();ctx.fillStyle='#3a332d';ctx.font='900 13px sans-serif';ctx.fillText(t,x+8,y+21)}
+function drawChar(x,y,look,isPlayer,n){ctx.save();ctx.translate(x,y);if(n&&n.recording){ctx.fillStyle='#222';ctx.fillRect(18,-30,13,20);ctx.fillStyle='#79c6da';ctx.fillRect(20,-27,9,10)}ctx.fillStyle='rgba(0,0,0,.15)';ctx.beginPath();ctx.ellipse(0,17,20,7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=look.shirt;ctx.strokeStyle='#332d28';ctx.lineWidth=isPlayer?4:2.5;ctx.beginPath();ctx.roundRect(-16,-2,32,35,12);ctx.fill();ctx.stroke();ctx.fillStyle='#e4b99a';ctx.beginPath();ctx.arc(0,-18,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=look.hair;ctx.beginPath();ctx.arc(0,-22,14,Math.PI,Math.PI*2);ctx.lineTo(14,-15);ctx.lineTo(-14,-15);ctx.closePath();ctx.fill();if(look.glasses){ctx.strokeStyle='#2c2722';ctx.lineWidth=2;ctx.strokeRect(-10,-20,8,6);ctx.strokeRect(2,-20,8,6);ctx.beginPath();ctx.moveTo(-2,-17);ctx.lineTo(2,-17);ctx.stroke()}ctx.fillStyle='#2c2722';ctx.beginPath();ctx.arc(-5,-17,1.5,0,7);ctx.arc(5,-17,1.5,0,7);ctx.fill();if(isPlayer){bubble(0,-52,'薛甄珠','#f0c966')}else if(n){let txt='';if(n.mark)txt=n.mark;else if(nearNpc&&nearNpc.id===n.id)txt='可以问';else if(n.wrong)txt='×';else if(n.asked)txt='已问';if(txt)bubble(0,-52,txt,'#fff7e6')}ctx.restore()}
+function bubble(x,y,text,bg){ctx.font='900 12px sans-serif';const w=Math.max(44,ctx.measureText(text).width+16);ctx.fillStyle=bg;ctx.strokeStyle='#3a332d';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x-w/2,y-18,w,24,10);ctx.fill();ctx.stroke();ctx.fillStyle='#2c2722';ctx.textAlign='center';ctx.fillText(text,x,y-2);ctx.textAlign='left'}
+function loop(ts){if(!last)last=ts;const dt=Math.min(.04,(ts-last)/1000);last=ts;animT=ts/1000;if(running){if(!dialogOpen){let dx=0,dy=0;if(keys.ArrowLeft||keys.a)dx--;if(keys.ArrowRight||keys.d)dx++;if(keys.ArrowUp||keys.w)dy--;if(keys.ArrowDown||keys.s)dy++;if(dx||dy)movePlayer(dx,dy,dt);timeLeft-=dt;anger=Math.min(100,anger+dt*.22);if(timeLeft<=0)finish('time');updateNPCs(dt)}nearNpc=nearest();$('#interact').classList.toggle('ready',!!nearNpc);$('#hint').textContent=nearNpc?'靠近了，可以问。':roomOf(player.x)==='reception'?'前台就在里面。':roomOf(player.x)==='office'?'工位区：多问几个人，别只信一条线索。':'茶水间：凌玲可能刚来过，也可能已经走了。';updateHUD()}draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+addEventListener('keydown',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=true;if((k==='e'||k==='Enter')&&running&&!dialogOpen&&nearNpc)startDialog(nearNpc)});addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
+document.querySelectorAll('.d').forEach(b=>{const d=b.dataset.dir,map={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'},k=map[d];const on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off)});
+$('#interact').onclick=()=>{if(running&&!dialogOpen&&nearNpc)startDialog(nearNpc)};
+$('#startBtn').onclick=()=>{reset();$('#home').classList.add('hidden');$('#end').classList.add('hidden');running=true;last=performance.now();resize()};
+$('#restartBtn').onclick=()=>{reset();$('#end').classList.add('hidden');running=true;last=performance.now()};
+$('#soundBtn').onclick=()=>{muted=!muted;$('#soundBtn').textContent=muted?'静音':'音效'};
+resize();reset();draw();
+})();
+</script>
+</body>
+</html>
